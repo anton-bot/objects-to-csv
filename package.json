@@ -1,6 +1,6 @@
 {
   "name": "objects-to-csv",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "description": "Converts an array of objects into a CSV file. Saves CSV to disk or returns as string.",
   "main": "index.js",
   "scripts": {
