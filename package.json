@@ -1,0 +1,31 @@
+{
+  "name": "objects-to-csv",
+  "version": "1.0.0",
+  "description": "Converts an array of objects into a CSV file. Saves CSV to disk or returns as string.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/catcher-in-the-try/objects-to-csv.git"
+  },
+  "keywords": [
+    "csv",
+    "object-to-csv",
+    "async-csv",
+    "converters",
+    "conversion",
+    "utilities",
+    "utils",
+    "json-to-csv",
+    "json2csv",
+    "array-to-csv"
+  ],
+  "author": "Anton Ivanov <anton@ivanov.hk>",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/catcher-in-the-try/objects-to-csv/issues"
+  },
+  "homepage": "https://github.com/catcher-in-the-try/objects-to-csv#readme"
+}
