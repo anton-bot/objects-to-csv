@@ -18,7 +18,7 @@ const data = [
   {code: 'NT', name: 'New Territories'},
 ];
 
-// Function must be asynchronous:
+// If you use "await", code must be inside an asynchronous function:
 (async() =>{
   let csv = new ObjectsToCsv(data);
 
@@ -34,10 +34,17 @@ const data = [
 
 The class contains two methods, `toDisk(filename)` and `toString()`.
 
-### async toDisk(filename) ###
+### async toDisk(filename, options) ###
 
 Converts the data and saves the CSV file to disk. The `filename` must include the
 path as well.
+
+The `options` is an optional parameter which is an object that contains the 
+settings. Supported options:
+
+- `append` - whether to append to the file. Default is `false` (overwrite the file).
+Set to `true` to append. Column names will be added only once at the beginning
+of the file. If the file does not exist, it will be created.
 
 ```js
 const ObjectsToCsv = require('objects-to-csv');
@@ -45,11 +52,18 @@ const sampleData = [{id: 1, text: "this is a test"}];
 
 // Run asynchronously, without awaiting:
 new ObjectsToCsv(sampleData).toDisk('./test.csv');
+
+// Alternatively, you can append to the existing file:
+new ObjectsToCsv(sampleData).toDisk('./test.csv', { append: true });
 ```
 
-### async toString() ###
+### async toString(header = true) ###
 
 Returns the CSV file as a string.
+
+The optional `header` parameter controls whether the column names will be
+returned as the first row of the file. Default is `true`. Set it to `false` to
+get only the data rows, without the column names.
 
 ```js
 const ObjectsToCsv = require('objects-to-csv');
@@ -66,4 +80,4 @@ printCsv(sampleData);
 
 ## Requirements ##
 
-Tested with Node 8.9. You must use a version of Node.js that supports ES7's async-await.
+Use Node.js version 8 or above.
