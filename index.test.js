@@ -46,18 +46,37 @@ describe('Object to CSV converter', () => {
     const testFilename = `deleteme-test-${Date.now()}-2.csv`;
     await csv.toDisk(testFilename);
     const result = fs.readFileSync(testFilename, 'utf8');
-    // fs.unlinkSync(testFilename);
+    fs.unlinkSync(testFilename);
     expect(result).toEqual('lang,text\nRussian,"Привет, как дела?"\nChinese,冇問題\nDanish,"Characters like Æ, Ø and Å"\n');
+  });
+
+  it('must generate a CSV file - special alphabets + BOM', async () => {
+    const csv = new ObjectsToCsv(SAMPLE_UNICODE);
+    const testFilename = `deleteme-test-${Date.now()}-3.csv`;
+    await csv.toDisk(testFilename, { bom: true });
+    const result = fs.readFileSync(testFilename, 'utf8');
+    fs.unlinkSync(testFilename);
+    expect(result).toEqual('\ufeff' + 'lang,text\nRussian,"Привет, как дела?"\nChinese,冇問題\nDanish,"Characters like Æ, Ø and Å"\n');
   });
 
   it('must append to CSV file', async () => {
     const csv = new ObjectsToCsv(SAMPLE_ASCII);
-    const testFilename = `deleteme-test-${Date.now()}-3.csv`;
+    const testFilename = `deleteme-test-${Date.now()}-4.csv`;
     await csv.toDisk(testFilename, { append: true });
     await csv.toDisk(testFilename, { append: true });
     await csv.toDisk(testFilename, { append: true });
     const result = fs.readFileSync(testFilename, 'utf8');
     fs.unlinkSync(testFilename);
     expect(result).toEqual('code,name\nHK,Hong Kong\nKLN,Kowloon\nNT,New Territories\nHK,Hong Kong\nKLN,Kowloon\nNT,New Territories\nHK,Hong Kong\nKLN,Kowloon\nNT,New Territories\n');
+  });
+
+  it('must append to CSV file + BOM', async () => {
+    const csv = new ObjectsToCsv(SAMPLE_UNICODE);
+    const testFilename = `deleteme-test-${Date.now()}-5.csv`;
+    await csv.toDisk(testFilename, { append: true, bom: true });
+    await csv.toDisk(testFilename, { append: true, bom: true });
+    const result = fs.readFileSync(testFilename, 'utf8');
+    fs.unlinkSync(testFilename);
+    expect(result).toEqual('\ufeff' + 'lang,text\nRussian,"Привет, как дела?"\nChinese,冇問題\nDanish,"Characters like Æ, Ø and Å"\nRussian,"Привет, как дела?"\nChinese,冇問題\nDanish,"Characters like Æ, Ø and Å"\n');
   });
 });

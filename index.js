@@ -29,23 +29,33 @@ class ObjectsToCsv {
    * Saves the CSV file to the specified file.
    * @param {string} filename - The path and filename of the new CSV file.
    * @param {object} options - The options for writing to disk.
-   * @param {boolean} options.append - Whether to append to file. Default is overwrite.
+   * @param {boolean} [options.append] - Whether to append to file. Default is overwrite.
+   * @param {boolean} [options.bom] - Append the BOM mark so that Excel shows
+   * Unicode correctly.
    */
   async toDisk(filename, options) {
     if (!filename) {
       throw new Error('Empty filename when trying to write to disk.');
     }
 
-  let addHeader = false;
+    let addHeader = false;
 
-  // If the file didn't exist yet or is empty, add the column headers
-  // as the first line of the file. Do not add it when we are appending
-  // to an existing file.
-  if (!fs.existsSync(filename) || fs.statSync(filename).size === 0) {
-    addHeader = true;
-  }
+    // If the file didn't exist yet or is empty, add the column headers
+    // as the first line of the file. Do not add it when we are appending
+    // to an existing file.
+    const fileNotExists = !fs.existsSync(filename) || fs.statSync(filename).size === 0;
+    if (fileNotExists) {
+      addHeader = true;
+    }
 
-    const data = await this.toString(addHeader);
+    let data = await this.toString(addHeader);
+
+    // Append the BOM mark if requested at the beginning of the file, otherwise
+    // Excel won't show Unicode correctly. The actual BOM mark will be EF BB BF,
+    // see https://stackoverflow.com/a/27975629/6269864 for details.
+    if (options && options.bom && fileNotExists) {
+      data = '\ufeff' + data;
+    }
 
     if (options && options.append) {
       return new Promise((resolve, reject) => {
