@@ -45,6 +45,9 @@ settings. Supported options:
 - `append` - whether to append to the file. Default is `false` (overwrite the file).
 Set to `true` to append. Column names will be added only once at the beginning
 of the file. If the file does not exist, it will be created.
+- `bom` - whether to add the Unicode Byte Order Mark at the beginning of the
+file. Default is `false`; set to `true` to be able to view Unicode in Excel
+properly. Otherwise Excel will display Unicode incorrectly.
 
 ```js
 const ObjectsToCsv = require('objects-to-csv');
