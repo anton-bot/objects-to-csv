@@ -49,7 +49,7 @@ class ObjectsToCsv {
 
     if (options && options.append) {
       return new Promise((resolve, reject) => {
-        fs.appendFile(filename, data, (error) => {
+        fs.appendFile(filename, data, 'utf8', (error) => {
           if (error) {
             reject(error);
           } else {
@@ -59,7 +59,7 @@ class ObjectsToCsv {
       });
     } else {
       return new Promise((resolve, reject) => {
-        fs.writeFile(filename, data, (error) => {
+        fs.writeFile(filename, data, 'utf8', (error) => {
           if (error) {
             reject(error);
           } else {
