@@ -1,3 +1,5 @@
 node_modules/
 test.js
 .vs/
+hotel.csv
+test-manual.js
