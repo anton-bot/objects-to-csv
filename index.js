@@ -44,7 +44,7 @@ class ObjectsToCsv {
     // as the first line of the file. Do not add it when we are appending
     // to an existing file.
     const fileNotExists = !fs.existsSync(filename) || fs.statSync(filename).size === 0;
-    if (fileNotExists) {
+    if (fileNotExists || !options || !options.append) {
       addHeader = true;
     }
 
