@@ -48,6 +48,9 @@ of the file. If the file does not exist, it will be created.
 - `bom` - whether to add the Unicode Byte Order Mark at the beginning of the
 file. Default is `false`; set to `true` to be able to view Unicode in Excel
 properly. Otherwise Excel will display Unicode incorrectly.
+- `allColumns` - whether to check all items for keys to convert to columns rather 
+than only the first.  This will sort the columns alphabetically.  Default is `false`;
+set to `true` to check all items for potential column names.
 
 ```js
 const ObjectsToCsv = require('objects-to-csv');
@@ -60,13 +63,19 @@ new ObjectsToCsv(sampleData).toDisk('./test.csv');
 new ObjectsToCsv(sampleData).toDisk('./test.csv', { append: true });
 ```
 
-### async toString(header = true) ###
+### async toString(header = true, allColumns = false) ###
 
 Returns the CSV file as a string.
 
-The optional `header` parameter controls whether the column names will be
+Two optional parameters exist:
+
+- `header` controls whether the column names will be
 returned as the first row of the file. Default is `true`. Set it to `false` to
 get only the data rows, without the column names.
+- `allColumns` controls whether to check every item for potential keys to process,
+rather than only the first; this will sort the columns alphabetically by key name.
+ Default is `false`. Set it to `true` to process keys
+that may not be present in the first item of the array.
 
 ```js
 const ObjectsToCsv = require('objects-to-csv');
