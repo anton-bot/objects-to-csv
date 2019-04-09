@@ -49,7 +49,7 @@ class ObjectsToCsv {
       addHeader = true;
     }
 
-    //if a boolena true is passed, set allColumns to true - else false.
+    //if a boolean true is passed, set allColumns to true - else false.
     let allColumns = false;
     if (options.allColumns === true) {
       allColumns = true;
