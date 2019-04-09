@@ -31,6 +31,7 @@ class ObjectsToCsv {
    * @param {object} options - The options for writing to disk.
    * @param {boolean} [options.append] - Whether to append to file. Default is overwrite.
    * @param {boolean} [options.bom] - Append the BOM mark so that Excel shows
+   * @param {boolean} [options.allColumns] - Whether to check all items for column names or only the first.  Default is the first.
    * Unicode correctly.
    */
   async toDisk(filename, options) {
@@ -48,8 +49,13 @@ class ObjectsToCsv {
       addHeader = true;
     }
 
-    let data = await this.toString(addHeader);
+    //if a boolena true is passed, set allColumns to true - else false.
+    let allColumns = false;
+    if (options.allColumns === true) {
+      allColumns = true;
+    }
 
+    let data = await this.toString(addHeader,allColumns);
     // Append the BOM mark if requested at the beginning of the file, otherwise
     // Excel won't show Unicode correctly. The actual BOM mark will be EF BB BF,
     // see https://stackoverflow.com/a/27975629/6269864 for details.
@@ -84,10 +90,11 @@ class ObjectsToCsv {
    * Returns the CSV file as string.
    * @param {boolean} header - If false, omit the first row containing the
    * column names.
+   * @param {boolean} allColumns - Whether to check all items for column names.  Uses only the first item if false.
    * @returns {string}
    */
-  async toString(header = true) {
-    return await convert(this.data, header);
+  async toString(header = true, allColumns = false) {
+    return await convert(this.data, header, allColumns);
   }
 }
 
@@ -95,9 +102,10 @@ class ObjectsToCsv {
  * Private method to run the actual conversion of array of objects to CSV data.
  * @param {object[]} data
  * @param {boolean} header - Whether the first line should contain column headers.
+ * @param {boolean} allColumns - Whether to check all items for column names.  Uses only the first item if false.
  * @returns {string}
  */
-async function convert(data, header = true) {
+async function convert(data, header = true, allColumns = false) {
   if (data.length === 0) {
     return '';
   }
@@ -108,6 +116,19 @@ async function convert(data, header = true) {
 
   // Figure out the columns from the first item in the array:
   let columnNames = Object.keys(data[0]);
+
+  //if allColumns was set to true, check each item to get all unique keys:
+  if (allColumns === true) {
+    let columnSet = new Set([]);
+    data.forEach((row) => {
+      let rowKeys = Object.keys(row);
+      rowKeys.forEach((key) => {
+        columnSet.add(key);
+      });
+    });
+    //sort columns to keep row order predictable
+    columnNames = [...columnSet].sort();
+  }
 
   if (header) {
     // Add header row
