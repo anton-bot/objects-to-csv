@@ -17,7 +17,7 @@ class ObjectsToCsv {
     }
 
     if (objectArray.length > 0) {
-      if (typeof objectArray[0] !== 'object') {
+      if (objectArray.some(row => typeof row !== 'object')) {
         throw new Error('The array must contain objects, not other data types.');
       }
     }
@@ -29,7 +29,7 @@ class ObjectsToCsv {
    * Saves the CSV file to the specified file.
    * @param {string} filename - The path and filename of the new CSV file.
    * @param {object} options - The options for writing to disk.
-   * @param {boolean} [options.append] - Whether to append to file. Default is overwrite.
+   * @param {boolean} [options.append] - Whether to append to file. Default is overwrite (false).
    * @param {boolean} [options.bom] - Append the BOM mark so that Excel shows
    * @param {boolean} [options.allColumns] - Whether to check all items for column names or only the first.  Default is the first.
    * Unicode correctly.
@@ -49,13 +49,11 @@ class ObjectsToCsv {
       addHeader = true;
     }
 
-    //if a boolean true is passed, set allColumns to true - else false.
-    let allColumns = false;
-    if (options.allColumns === true) {
-      allColumns = true;
-    }
+    const allColumns = options && options.allColumns
+      ? options.allColumns
+      : false;
 
-    let data = await this.toString(addHeader,allColumns);
+    let data = await this.toString(addHeader, allColumns);
     // Append the BOM mark if requested at the beginning of the file, otherwise
     // Excel won't show Unicode correctly. The actual BOM mark will be EF BB BF,
     // see https://stackoverflow.com/a/27975629/6269864 for details.
@@ -90,8 +88,9 @@ class ObjectsToCsv {
    * Returns the CSV file as string.
    * @param {boolean} header - If false, omit the first row containing the
    * column names.
-   * @param {boolean} allColumns - Whether to check all items for column names.  Uses only the first item if false.
-   * @returns {string}
+   * @param {boolean} allColumns - Whether to check all items for column names.
+   *   Uses only the first item if false.
+   * @returns {Promise<string>}
    */
   async toString(header = true, allColumns = false) {
     return await convert(this.data, header, allColumns);
@@ -102,7 +101,8 @@ class ObjectsToCsv {
  * Private method to run the actual conversion of array of objects to CSV data.
  * @param {object[]} data
  * @param {boolean} header - Whether the first line should contain column headers.
- * @param {boolean} allColumns - Whether to check all items for column names.  Uses only the first item if false.
+ * @param {boolean} allColumns - Whether to check all items for column names.
+ *   Uses only the first item if false.
  * @returns {string}
  */
 async function convert(data, header = true, allColumns = false) {
@@ -110,36 +110,30 @@ async function convert(data, header = true, allColumns = false) {
     return '';
   }
 
+  const columnNames =
+    allColumns
+      ? [...data
+        .reduce((columns, row) => { // check each object to compile a full list of column names
+          Object.keys(row).map(rowKey => columns.add(rowKey));
+          return columns;
+        }, new Set())]
+      : Object.keys(data[0]); // just figure out columns from the first item in array
+
+  if (allColumns) {
+    columnNames.sort(); // for predictable order of columns
+  }
+
   // This will hold data in the format that `async-csv` can accept, i.e.
   // an array of arrays.
   let csvInput = [];
-
-  // Figure out the columns from the first item in the array:
-  let columnNames = Object.keys(data[0]);
-
-  //if allColumns was set to true, check each item to get all unique keys:
-  if (allColumns === true) {
-    let columnSet = new Set([]);
-    data.forEach((row) => {
-      let rowKeys = Object.keys(row);
-      rowKeys.forEach((key) => {
-        columnSet.add(key);
-      });
-    });
-    //sort columns to keep row order predictable
-    columnNames = [...columnSet].sort();
-  }
-
   if (header) {
-    // Add header row
     csvInput.push(columnNames);
   }
 
-  // Add all the other rows:
-  for (let row of data) {
-    let item = columnNames.map(column => row[column]);
-    csvInput.push(item);
-  }
+  // Add all other rows:
+  csvInput.push(
+    ...data.map(row => columnNames.map(column => row[column])),
+  );
 
   return await csv.stringify(csvInput);
 }

@@ -67,15 +67,15 @@ new ObjectsToCsv(sampleData).toDisk('./test.csv', { append: true });
 
 Returns the CSV file as a string.
 
-Two optional parameters exist:
+Two optional parameters are available:
 
 - `header` controls whether the column names will be
 returned as the first row of the file. Default is `true`. Set it to `false` to
 get only the data rows, without the column names.
 - `allColumns` controls whether to check every item for potential keys to process,
-rather than only the first; this will sort the columns alphabetically by key name.
- Default is `false`. Set it to `true` to process keys
-that may not be present in the first item of the array.
+rather than only the first item; this will sort the columns alphabetically by key name.
+Default is `false`. Set it to `true` to process keys that may not be present
+in the first object of the array.
 
 ```js
 const ObjectsToCsv = require('objects-to-csv');
