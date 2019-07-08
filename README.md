@@ -1,6 +1,7 @@
 # Convert array of objects into a CSV file #
 
-This class converts an array of JavaScript objects into the CSV format, optionally saving it to a CSV file.
+This class converts an array of JavaScript objects into the CSV format. You can
+save the CSV to file or return it as a string.
 
 The first object of the array will determine the number of columns and the column names.
 
@@ -19,8 +20,8 @@ const data = [
 ];
 
 // If you use "await", code must be inside an asynchronous function:
-(async() =>{
-  let csv = new ObjectsToCsv(data);
+(async () => {
+  const csv = new ObjectsToCsv(data);
 
   // Save to file:
   await csv.toDisk('./test.csv');
@@ -54,7 +55,7 @@ set to `true` to check all items for potential column names.
 
 ```js
 const ObjectsToCsv = require('objects-to-csv');
-const sampleData = [{id: 1, text: "this is a test"}];
+const sampleData = [{ id: 1, text: 'this is a test' }];
 
 // Run asynchronously, without awaiting:
 new ObjectsToCsv(sampleData).toDisk('./test.csv');
@@ -79,7 +80,7 @@ in the first object of the array.
 
 ```js
 const ObjectsToCsv = require('objects-to-csv');
-const sampleData = [{id: 1, text: "this is a test"}];
+const sampleData = [{ id: 1, text: 'this is a test' }];
 
 async function printCsv(data) {
   console.log(
