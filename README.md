@@ -1,9 +1,9 @@
 # Convert array of objects into a CSV file #
 
-This class converts an array of JavaScript objects into the CSV format. You can
+Converts an array of JavaScript objects into the CSV format. You can
 save the CSV to file or return it as a string.
 
-The first object of the array will determine the number of columns and the column names.
+The keys in the first object of the array will be used as column names.
 
 Any special characters in the values (such as commas) will be properly escaped.
 
@@ -14,9 +14,9 @@ const ObjectsToCsv = require('objects-to-csv');
 
 // Sample data - two columns, three rows:
 const data = [
-  {code: 'HK', name: 'Hong Kong'},
-  {code: 'KLN', name: 'Kowloon'},
-  {code: 'NT', name: 'New Territories'},
+  {code: 'CA', name: 'California'},
+  {code: 'TX', name: 'Texas'},
+  {code: 'NY', name: 'New York'},
 ];
 
 // If you use "await", code must be inside an asynchronous function:
@@ -33,7 +33,7 @@ const data = [
 
 ## Methods ##
 
-The class contains two methods, `toDisk(filename)` and `toString()`.
+There are two methods, `toDisk(filename)` and `toString()`.
 
 ### async toDisk(filename, options) ###
 
@@ -49,8 +49,8 @@ of the file. If the file does not exist, it will be created.
 - `bom` - whether to add the Unicode Byte Order Mark at the beginning of the
 file. Default is `false`; set to `true` to be able to view Unicode in Excel
 properly. Otherwise Excel will display Unicode incorrectly.
-- `allColumns` - whether to check all items for keys to convert to columns rather 
-than only the first.  This will sort the columns alphabetically.  Default is `false`;
+- `allColumns` - whether to check all array items for keys to convert to columns rather 
+than only the first. This will sort the columns alphabetically. Default is `false`;
 set to `true` to check all items for potential column names.
 
 ```js
@@ -62,6 +62,15 @@ new ObjectsToCsv(sampleData).toDisk('./test.csv');
 
 // Alternatively, you can append to the existing file:
 new ObjectsToCsv(sampleData).toDisk('./test.csv', { append: true });
+
+// `allColumns: true` collects column names from all objects in the array,
+// instead of only using the first one. In this case the CSV file will
+// contain three columns:
+const mixedData = [
+  { id: 1, name: 'California' },
+  { id: 2, description: 'A long description.' },
+];
+new ObjectsToCsv(mixedData).toDisk('./test.csv', { allColumns: true });
 ```
 
 ### async toString(header = true, allColumns = false) ###
