@@ -21,7 +21,7 @@ const data = [
 
 // If you use "await", code must be inside an asynchronous function:
 (async () => {
-  const csv = new ObjectsToCsv(data);
+  const csv = new ObjectsToCsv(data, options = {});
 
   // Save to file:
   await csv.toDisk('./test.csv');
@@ -29,6 +29,27 @@ const data = [
   // Return the CSV file as string:
   console.log(await csv.toString());
 })();
+```
+
+### options ###
+
+See [CSV Stringify options](https://csv.js.org/stringify/options/) for detailed description
+
+```js
+{
+  cast,
+  columns,
+  delimiter,
+  eof,
+  escape,
+  header,
+  quote,
+  quoted,
+  quoted_empty,
+  quoted_match,
+  quoted_string,
+  record_delimiter,
+}
 ```
 
 ## Methods ##
