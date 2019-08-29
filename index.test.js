@@ -1,4 +1,4 @@
-﻿const ObjectsToCsv = require('./index');
+﻿const ObjectsToCsv = require('./index.js');
 const fs = require('fs');
 
 const SAMPLE_ASCII = [

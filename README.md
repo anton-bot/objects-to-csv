@@ -7,6 +7,8 @@ The keys in the first object of the array will be used as column names.
 
 Any special characters in the values (such as commas) will be properly escaped.
 
+Written in TypeScript, works with JavaScript as well.
+
 ## Usage ##
 
 ```js

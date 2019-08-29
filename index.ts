@@ -1,17 +1,17 @@
-'use strict';
-
-const csv = require('async-csv');
-const fs = require('fs');
+import { stringify } from 'async-csv';
+import { existsSync, statSync, appendFile, writeFile } from 'fs';
 
 /**
  * Converts an array of objects into a CSV file.
  */
 class ObjectsToCsv {
+  private data: object[] = [];
+
   /**
    * Creates a new instance of the object array to csv converter.
    * @param {object[]} objectArray
    */
-  constructor(objectArray) {
+  constructor(objectArray: object[]) {
     if (!Array.isArray(objectArray)) {
       throw new Error('The input to objects-to-csv must be an array of objects.');
     }
@@ -33,8 +33,9 @@ class ObjectsToCsv {
    * @param {boolean} [options.bom] - Append the BOM mark so that Excel shows
    * @param {boolean} [options.allColumns] - Whether to check all items for column names or only the first.  Default is the first.
    * Unicode correctly.
+   * @returns {string} The saved CSV string;
    */
-  async toDisk(filename, options) {
+  async toDisk(filename: string, options?: ToDiskOptions): Promise<string> {
     if (!filename) {
       throw new Error('Empty filename when trying to write to disk.');
     }
@@ -44,7 +45,7 @@ class ObjectsToCsv {
     // If the file didn't exist yet or is empty, add the column headers
     // as the first line of the file. Do not add it when we are appending
     // to an existing file.
-    const fileNotExists = !fs.existsSync(filename) || fs.statSync(filename).size === 0;
+    const fileNotExists = !existsSync(filename) || statSync(filename).size === 0;
     if (fileNotExists || !options || !options.append) {
       addHeader = true;
     }
@@ -63,7 +64,7 @@ class ObjectsToCsv {
 
     if (options && options.append) {
       return new Promise((resolve, reject) => {
-        fs.appendFile(filename, data, 'utf8', (error) => {
+        appendFile(filename, data, 'utf8', (error) => {
           if (error) {
             reject(error);
           } else {
@@ -73,7 +74,7 @@ class ObjectsToCsv {
       });
     } else {
       return new Promise((resolve, reject) => {
-        fs.writeFile(filename, data, 'utf8', (error) => {
+        writeFile(filename, data, 'utf8', (error) => {
           if (error) {
             reject(error);
           } else {
@@ -92,7 +93,7 @@ class ObjectsToCsv {
    *   Uses only the first item if false.
    * @returns {Promise<string>}
    */
-  async toString(header = true, allColumns = false) {
+  async toString(header: boolean = true, allColumns: boolean = false): Promise<string> {
     return await convert(this.data, header, allColumns);
   }
 }
@@ -105,15 +106,15 @@ class ObjectsToCsv {
  *   Uses only the first item if false.
  * @returns {string}
  */
-async function convert(data, header = true, allColumns = false) {
+async function convert(data: object[], header: boolean = true, allColumns: boolean = false): Promise<string> {
   if (data.length === 0) {
     return '';
   }
 
-  const columnNames =
+  const columnNames: string[] =
     allColumns
       ? [...data
-        .reduce((columns, row) => { // check each object to compile a full list of column names
+        .reduce<Set<string>>((columns, row) => { // check each object to compile a full list of column names
           Object.keys(row).map(rowKey => columns.add(rowKey));
           return columns;
         }, new Set())]
@@ -125,17 +126,23 @@ async function convert(data, header = true, allColumns = false) {
 
   // This will hold data in the format that `async-csv` can accept, i.e.
   // an array of arrays.
-  let csvInput = [];
+  const csvInput = [];
   if (header) {
     csvInput.push(columnNames);
   }
 
   // Add all other rows:
   csvInput.push(
-    ...data.map(row => columnNames.map(column => row[column])),
+    ...data.map((row: Record<string, any>) => columnNames.map(column => row[column])),
   );
 
-  return await csv.stringify(csvInput);
+  return await stringify(csvInput);
 }
 
-module.exports = ObjectsToCsv;
+type ToDiskOptions = {
+  append: boolean;
+  bom: boolean;
+  allColumns: boolean;
+};
+
+export default ObjectsToCsv;
