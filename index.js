@@ -4,14 +4,35 @@ const csv = require('async-csv');
 const fs = require('fs');
 
 /**
+ * @typedef {{value: string, quote: boolean}|string} CastResult
+ */
+
+/**
+ * @typedef {object} CsvOptions
+ * @property {{boolean: function(boolean):CastResult, date: function(date):CastResult, number: function(number):CastResult, object:function(object):CastResult}} cast Defines custom cast for certain data types.
+ * @property {array|object} columns List of properties when records are provided as objects; work with records in the form of arrays based on index position; order matters; auto discovered in the first record when the user write objects, can refer to nested properties of the input JSON, see the "header" option on how to print columns names on the first line.
+ * @property {string} delimiter Set the field delimiter, one or multiple characters, defaults to a comma.
+ * @property {boolean} eof Add the value of "options.record_delimiter" on the last line, default to true.
+ * @property {string|Buffer} escape Single character used for escaping; only apply to characters matching the quote and the escape options default to ".
+ * @property {boolean} header Display the column names on the first line if the columns option is provided or discovered.
+ * @property {string|Buffer|boolean} quote The quote characters, defaults to the ", an empty quote value will preserve the original field.
+ * @property {boolean} quoted Boolean, default to false, quote all the non-empty fields even if not required.
+ * @property {boolean} quoted_empty Quote empty strings and overrides quoted_string on empty strings when defined; default is false.
+ * @property {boolean} quoted_match Quote all fields matching a regular expression; default is false.
+ * @property {boolean} quoted_string Quote all fields of type string even if not required; default is false.
+ * @property {string|Buffer} record_delimiter String used to delimit record rows or a special value; special values are 'auto', 'unix', 'mac', 'windows', 'ascii', 'unicode'; defaults to 'auto' (discovered in source or 'unix' if no source is specified)
+ */
+
+/**
  * Converts an array of objects into a CSV file.
  */
 class ObjectsToCsv {
   /**
    * Creates a new instance of the object array to csv converter.
    * @param {object[]} objectArray
+   * @param {CsvOptions} csvOptions Options passed to the csv stringify, see (https://csv.js.org/stringify/options/)
    */
-  constructor(objectArray) {
+  constructor(objectArray, csvOptions = {}) {
     if (!Array.isArray(objectArray)) {
       throw new Error('The input to objects-to-csv must be an array of objects.');
     }
@@ -23,6 +44,7 @@ class ObjectsToCsv {
     }
 
     this.data = objectArray;
+    this.csvOptions = csvOptions;
   }
 
   /**
@@ -93,7 +115,7 @@ class ObjectsToCsv {
    * @returns {Promise<string>}
    */
   async toString(header = true, allColumns = false) {
-    return await convert(this.data, header, allColumns);
+    return await convert(this.data, header, allColumns, this.csvOptions);
   }
 }
 
@@ -103,9 +125,10 @@ class ObjectsToCsv {
  * @param {boolean} header - Whether the first line should contain column headers.
  * @param {boolean} allColumns - Whether to check all items for column names.
  *   Uses only the first item if false.
+ * @param {CsvOptions} options
  * @returns {string}
  */
-async function convert(data, header = true, allColumns = false) {
+async function convert(data, header = true, allColumns = false, options = {}) {
   if (data.length === 0) {
     return '';
   }
@@ -135,7 +158,7 @@ async function convert(data, header = true, allColumns = false) {
     ...data.map(row => columnNames.map(column => row[column])),
   );
 
-  return await csv.stringify(csvInput);
+  return await csv.stringify(csvInput, options);
 }
 
 module.exports = ObjectsToCsv;
