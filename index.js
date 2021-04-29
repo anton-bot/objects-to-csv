@@ -57,7 +57,7 @@ class ObjectsToCsv {
     // Append the BOM mark if requested at the beginning of the file, otherwise
     // Excel won't show Unicode correctly. The actual BOM mark will be EF BB BF,
     // see https://stackoverflow.com/a/27975629/6269864 for details.
-    if (options && options.bom && fileNotExists) {
+    if (options && options.bom) {
       data = '\ufeff' + data;
     }
 
