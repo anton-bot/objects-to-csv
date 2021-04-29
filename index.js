@@ -53,7 +53,11 @@ class ObjectsToCsv {
       ? options.allColumns
       : false;
 
-    let data = await this.toString(addHeader, allColumns);
+    const delimiter = options && options.delimiter
+        ? options.delimiter
+        : ',';
+
+    let data = await this.toString(addHeader, allColumns,delimiter);
     // Append the BOM mark if requested at the beginning of the file, otherwise
     // Excel won't show Unicode correctly. The actual BOM mark will be EF BB BF,
     // see https://stackoverflow.com/a/27975629/6269864 for details.
@@ -90,10 +94,12 @@ class ObjectsToCsv {
    * column names.
    * @param {boolean} allColumns - Whether to check all items for column names.
    *   Uses only the first item if false.
+   * @param {String} delimiter - Delimiter(Seperator) for the columns.
+   *   Default is ',' if not set.
    * @returns {Promise<string>}
    */
-  async toString(header = true, allColumns = false) {
-    return await convert(this.data, header, allColumns);
+  async toString(header = true, allColumns = false,delimiter=',') {
+    return await convert(this.data, header, allColumns,delimiter);
   }
 }
 
@@ -103,9 +109,11 @@ class ObjectsToCsv {
  * @param {boolean} header - Whether the first line should contain column headers.
  * @param {boolean} allColumns - Whether to check all items for column names.
  *   Uses only the first item if false.
+ * @param {String} delimiter - Delimiter(Seperator) for the columns.
+ *   Default is ',' if not set.
  * @returns {string}
  */
-async function convert(data, header = true, allColumns = false) {
+async function convert(data, header = true, allColumns = false,delimiter = ',') {
   if (data.length === 0) {
     return '';
   }
@@ -135,7 +143,7 @@ async function convert(data, header = true, allColumns = false) {
     ...data.map(row => columnNames.map(column => row[column])),
   );
 
-  return await csv.stringify(csvInput);
+  return await csv.stringify(csvInput,{delimiter:delimiter});
 }
 
 module.exports = ObjectsToCsv;
