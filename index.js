@@ -130,10 +130,24 @@ async function convert(data, header = true, allColumns = false) {
     csvInput.push(columnNames);
   }
 
-  // Add all other rows:
-  csvInput.push(
-    ...data.map(row => columnNames.map(column => row[column])),
-  );
+  if (data.length < 100000)
+  {
+    // Add all other rows:
+    csvInput.push(
+      ...data.map(row => columnNames.map(column => row[column])),
+    );
+  }
+  else{
+    // manually load to array to avoid stack heap error on data length > 100,000 rows 
+    // https://stackoverflow.com/questions/61740599/rangeerror-maximum-call-stack-size-exceeded-with-array-push
+    for (const row in data) {
+      let rowData = [];
+      columnNames.forEach(column => {
+        rowData.push(data[row][column])
+      });
+      csvInput.push(rowData); 
+    }
+  }
 
   return await csv.stringify(csvInput);
 }
