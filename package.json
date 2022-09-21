@@ -32,7 +32,6 @@
     "async-csv": "^2.1.3"
   },
   "devDependencies": {
-    "@faker-js/faker": "^7.5.0",
     "jest": "^24.9.0"
   }
 }
