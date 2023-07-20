@@ -108,6 +108,8 @@ class ObjectsToCsv {
  * @param {object[]} data
  * @param {boolean} header - Whether the first line should contain column headers.
  * @param {boolean} allColumns - Whether to check all items for column names.
+ * @param {boolean} [options.sortColumns] - Whether to sort columns names alphabetically. If false, maintains
+ *  the order of keys in the object
  *   Uses only the first item if false.
  * @returns {string}
  */
