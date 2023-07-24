@@ -32,6 +32,8 @@ class ObjectsToCsv {
    * @param {boolean} [options.append] - Whether to append to file. Default is overwrite (false).
    * @param {boolean} [options.bom] - Append the BOM mark so that Excel shows
    * @param {boolean} [options.allColumns] - Whether to check all items for column names or only the first.  Default is the first.
+   * @param {boolean} [options.sortColumns] - Whether to sort columns names alphabetically. If false, maintains
+   *  the order of keys in the object
    * Unicode correctly.
    */
   async toDisk(filename, options) {
@@ -53,7 +55,9 @@ class ObjectsToCsv {
       ? options.allColumns
       : false;
 
-    let data = await this.toString(addHeader, allColumns);
+    const sortColumns = options.sortColumns ? options.sortColumns : true;
+
+    let data = await this.toString(addHeader, allColumns, sortColumns);
     // Append the BOM mark if requested at the beginning of the file, otherwise
     // Excel won't show Unicode correctly. The actual BOM mark will be EF BB BF,
     // see https://stackoverflow.com/a/27975629/6269864 for details.
@@ -91,9 +95,11 @@ class ObjectsToCsv {
    * @param {boolean} allColumns - Whether to check all items for column names.
    *   Uses only the first item if false.
    * @returns {Promise<string>}
+   * @param {boolean} sortColumns - Whether to sort columns names alphabetically. If false, maintains
+   *  the order of keys in the object
    */
-  async toString(header = true, allColumns = false) {
-    return await convert(this.data, header, allColumns);
+  async toString(header = true, allColumns = false, sortColumns = true) {
+    return await convert(this.data, header, allColumns, sortColumns);
   }
 }
 
@@ -102,10 +108,12 @@ class ObjectsToCsv {
  * @param {object[]} data
  * @param {boolean} header - Whether the first line should contain column headers.
  * @param {boolean} allColumns - Whether to check all items for column names.
+ * @param {boolean} [options.sortColumns] - Whether to sort columns names alphabetically. If false, maintains
+ *  the order of keys in the object
  *   Uses only the first item if false.
  * @returns {string}
  */
-async function convert(data, header = true, allColumns = false) {
+async function convert(data, header = true, allColumns = false, sortColumns = true) {
   if (data.length === 0) {
     return '';
   }
@@ -119,7 +127,7 @@ async function convert(data, header = true, allColumns = false) {
         }, new Set())]
       : Object.keys(data[0]); // just figure out columns from the first item in array
 
-  if (allColumns) {
+  if (allColumns && sortColumns) {
     columnNames.sort(); // for predictable order of columns
   }
 
