@@ -1,4 +1,4 @@
-## 3.0.0 (unreleased)
+## 3.0.0 (2026-10-10)
 
 - Escape spreadsheet formula prefixes in values and column names by default,
   including leading whitespace, control characters and full-width Unicode variants.
