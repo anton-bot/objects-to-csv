@@ -1,7 +1,14 @@
 'use strict';
 
-const csv = require('async-csv');
-const fs = require('fs');
+const { stringify } = require('csv-stringify');
+const fs = require('node:fs/promises');
+
+// Check past leading whitespace/control characters without changing the data.
+const FORMULA_PREFIX = /^(?:[\s\x00-\x1f]*[=+\-@\uFF1D\uFF0B\uFF0D\uFF20]|[\t\r\n])/;
+
+function escapeFormula(value) {
+  return FORMULA_PREFIX.test(value) ? "'" + value : value;
+}
 
 /**
  * Converts an array of objects into a CSV file.
@@ -10,19 +17,26 @@ class ObjectsToCsv {
   /**
    * Creates a new instance of the object array to csv converter.
    * @param {object[]} objectArray
+   * @param {object} [options]
+   * @param {boolean} [options.escapeFormulas=true] - Escape spreadsheet formulas.
    */
-  constructor(objectArray) {
+  constructor(objectArray, { escapeFormulas = true } = {}) {
     if (!Array.isArray(objectArray)) {
       throw new Error('The input to objects-to-csv must be an array of objects.');
     }
 
-    if (objectArray.length > 0) {
-      if (objectArray.some(row => typeof row !== 'object')) {
+    for (const row of objectArray) {
+      if (row === null || typeof row !== 'object' || Array.isArray(row)) {
         throw new Error('The array must contain objects, not other data types.');
       }
     }
 
+    if (typeof escapeFormulas !== 'boolean') {
+      throw new TypeError('escapeFormulas must be a boolean.');
+    }
+
     this.data = objectArray;
+    this.escapeFormulas = escapeFormulas;
   }
 
   /**
@@ -30,58 +44,30 @@ class ObjectsToCsv {
    * @param {string} filename - The path and filename of the new CSV file.
    * @param {object} options - The options for writing to disk.
    * @param {boolean} [options.append] - Whether to append to file. Default is overwrite (false).
-   * @param {boolean} [options.bom] - Append the BOM mark so that Excel shows
+   * @param {boolean} [options.bom] - Add a BOM so that Excel shows Unicode correctly.
    * @param {boolean} [options.allColumns] - Whether to check all items for column names or only the first.  Default is the first.
-   * Unicode correctly.
+   * @returns {Promise<string>} The CSV text written to disk.
    */
   async toDisk(filename, options) {
     if (!filename) {
       throw new Error('Empty filename when trying to write to disk.');
     }
 
-    let addHeader = false;
-
-    // If the file didn't exist yet or is empty, add the column headers
-    // as the first line of the file. Do not add it when we are appending
-    // to an existing file.
-    const fileNotExists = !fs.existsSync(filename) || fs.statSync(filename).size === 0;
-    if (fileNotExists || !options || !options.append) {
-      addHeader = true;
+    const { append = false, bom = false, allColumns = false } = options || {};
+    let addHeader = true;
+    if (append) {
+      try {
+        addHeader = (await fs.stat(filename)).size === 0;
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+      }
     }
-
-    const allColumns = options && options.allColumns
-      ? options.allColumns
-      : false;
 
     let data = await this.toString(addHeader, allColumns);
-    // Append the BOM mark if requested at the beginning of the file, otherwise
-    // Excel won't show Unicode correctly. The actual BOM mark will be EF BB BF,
-    // see https://stackoverflow.com/a/27975629/6269864 for details.
-    if (options && options.bom && fileNotExists) {
-      data = '\ufeff' + data;
-    }
+    if (bom && addHeader) data = '\ufeff' + data;
 
-    if (options && options.append) {
-      return new Promise((resolve, reject) => {
-        fs.appendFile(filename, data, 'utf8', (error) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(data);
-          }
-        });
-      });
-    } else {
-      return new Promise((resolve, reject) => {
-        fs.writeFile(filename, data, 'utf8', (error) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(data);
-          }
-        });
-      });
-    }
+    await fs.writeFile(filename, data, { encoding: 'utf8', flag: append ? 'a' : 'w' });
+    return data;
   }
 
   /**
@@ -93,7 +79,7 @@ class ObjectsToCsv {
    * @returns {Promise<string>}
    */
   async toString(header = true, allColumns = false) {
-    return await convert(this.data, header, allColumns);
+    return convert(this.data, header, allColumns, this.escapeFormulas);
   }
 }
 
@@ -103,9 +89,10 @@ class ObjectsToCsv {
  * @param {boolean} header - Whether the first line should contain column headers.
  * @param {boolean} allColumns - Whether to check all items for column names.
  *   Uses only the first item if false.
- * @returns {string}
+ * @param {boolean} escapeFormulas - Whether to escape spreadsheet formulas.
+ * @returns {Promise<string>}
  */
-async function convert(data, header = true, allColumns = false) {
+async function convert(data, header, allColumns, escapeFormulas) {
   if (data.length === 0) {
     return '';
   }
@@ -114,7 +101,7 @@ async function convert(data, header = true, allColumns = false) {
     allColumns
       ? [...data
         .reduce((columns, row) => { // check each object to compile a full list of column names
-          Object.keys(row).map(rowKey => columns.add(rowKey));
+          Object.keys(row).forEach(rowKey => columns.add(rowKey));
           return columns;
         }, new Set())]
       : Object.keys(data[0]); // just figure out columns from the first item in array
@@ -123,19 +110,25 @@ async function convert(data, header = true, allColumns = false) {
     columnNames.sort(); // for predictable order of columns
   }
 
-  // This will hold data in the format that `async-csv` can accept, i.e.
-  // an array of arrays.
-  let csvInput = [];
+  const csvInput = [];
   if (header) {
     csvInput.push(columnNames);
   }
 
   // Add all other rows:
-  csvInput.push(
-    ...data.map(row => columnNames.map(column => row[column])),
-  );
+  for (const row of data) {
+    csvInput.push(columnNames.map(column => row[column]));
+  }
 
-  return await csv.stringify(csvInput);
+  return new Promise((resolve, reject) => {
+    stringify(csvInput, {
+      escape_formulas: escapeFormulas,
+      cast: { string: escapeFormulas ? escapeFormula : value => value },
+    }, (error, output) => {
+      if (error) reject(error);
+      else resolve(output);
+    });
+  });
 }
 
 module.exports = ObjectsToCsv;

@@ -6,6 +6,18 @@ save the CSV to file or return it as a string.
 The keys in the first object of the array will be used as column names.
 
 Any special characters in the values (such as commas) will be properly escaped.
+Spreadsheet formula escaping is enabled by default for both values and column names.
+
+## Upgrading from 1.x ##
+
+Version 3 requires Node.js 18 or newer. Existing `toString()` and `toDisk()` calls
+still work, but strings that could be interpreted as spreadsheet formulas now get
+a leading apostrophe. For example, `=1+1` becomes `'=1+1`, and the string `-42`
+becomes `'-42`. JavaScript numbers such as `-42` remain numbers in the CSV output.
+Null rows, array rows and sparse input arrays are rejected with a clear error.
+
+The version number skips the previously published experimental `2.0.0` on the
+`next` npm tag. This release continues the API from stable `1.3.6`.
 
 ## Usage ##
 
@@ -35,6 +47,32 @@ const data = [
 
 There are two methods, `toDisk(filename)` and `toString()`.
 
+### new ObjectsToCsv(data, options) ###
+
+`data` must be an array of non-null objects. The optional `options` object accepts:
+
+- `escapeFormulas` — defaults to `true`. Prefixes potentially dangerous text with
+an apostrophe before CSV quoting. Applies to column names and data in both output
+methods, including appended rows. Does not mutate the input objects.
+
+Protection covers `=`, `+`, `-`, `@`, their full-width Unicode variants, and leading
+tabs, carriage returns and line feeds. Formula prefixes behind leading whitespace
+or ASCII control characters are also escaped. Existing leading apostrophes are
+preserved.
+
+Escaping changes the underlying text. To preserve raw values for trusted data or
+machine-only processing, explicitly disable it:
+
+```js
+const csv = new ObjectsToCsv(trustedData, { escapeFormulas: false });
+```
+
+With escaping disabled, untrusted values can become active spreadsheet formulas.
+CSV quoting alone does not prevent this. Spreadsheet import settings differ, and
+editing, saving and reopening CSV files can remove protective escaping. For a
+workflow that must preserve cell types through editing, use a spreadsheet format
+with explicitly typed text cells. See [OWASP's CSV injection guidance](https://owasp.org/www-community/attacks/CSV_Injection).
+
 ### async toDisk(filename, options) ###
 
 Converts the data and saves the CSV file to disk. The `filename` must include the
@@ -49,6 +87,8 @@ of the file. If the file does not exist, it will be created.
 - `bom` - whether to add the Unicode Byte Order Mark at the beginning of the
 file. Default is `false`; set to `true` to be able to view Unicode in Excel
 properly. Otherwise Excel will display Unicode incorrectly.
+The BOM is included when creating or overwriting a file; appending to a non-empty
+file does not add another BOM.
 - `allColumns` - whether to check all array items for keys to convert to columns rather 
 than only the first. This will sort the columns alphabetically. Default is `false`;
 set to `true` to check all items for potential column names.
@@ -72,6 +112,10 @@ const mixedData = [
 ];
 new ObjectsToCsv(mixedData).toDisk('./test.csv', { allColumns: true });
 ```
+
+Resolves to the text written to the file. Await each write before appending again
+to the same file. When appending, keep the same column names and order as the
+existing CSV; the method does not reconcile schemas.
 
 ### async toString(header = true, allColumns = false) ###
 
@@ -102,4 +146,16 @@ printCsv(sampleData);
 
 ## Requirements ##
 
-Use Node.js version 8 or above.
+Use Node.js version 18 or above. A currently maintained Node.js release is recommended.
+
+## Development ##
+
+```sh
+npm ci
+npm test
+npm audit
+npm pack --dry-run
+```
+
+Tests use Node's built-in test runner. CSV formatting is handled by `csv-stringify`,
+the only runtime dependency. Publishing runs the tests again through `prepublishOnly`.
